@@ -4,21 +4,18 @@ import { useSelector } from 'react-redux';
 import { selectIsAuthenticated, selectAccessToken } from '@store/slices/authSlice';
 import socketService from '@services/socketService';
 
-// Layouts (to be implemented)
-// import MainLayout from '@layouts/MainLayout';
-// import AuthLayout from '@layouts/AuthLayout';
+// Layouts
+import MainLayout from '@layouts/MainLayout';
 
-// Pages (to be implemented)
-// import LoginPage from '@pages/auth/LoginPage';
-// import DashboardPage from '@pages/dashboard/DashboardPage';
-// import TicketsPage from '@pages/tickets/TicketsPage';
-// import QueuePage from '@pages/queue/QueuePage';
-// import PatientsPage from '@pages/patients/PatientsPage';
-// import ClinicsPage from '@pages/clinics/ClinicsPage';
-// import DoctorsPage from '@pages/doctors/DoctorsPage';
-// import ReportsPage from '@pages/reports/ReportsPage';
-// import DisplayPage from '@pages/display/DisplayPage';
-// import NotFoundPage from '@pages/NotFoundPage';
+// Pages
+import LoginPage from '@pages/auth/LoginPage';
+import DashboardPage from '@pages/dashboard/DashboardPage';
+import TicketsPage from '@pages/tickets/TicketsPage';
+import QueuePage from '@pages/queue/QueuePage';
+import NotFoundPage from '@pages/NotFoundPage';
+
+// Components
+import ProtectedRoute from '@components/common/ProtectedRoute';
 
 function App() {
   const isAuthenticated = useSelector(selectIsAuthenticated);
@@ -38,51 +35,90 @@ function App() {
   return (
     <div className="h-full">
       <Routes>
-        {/* Temporary placeholder routes */}
+        {/* Public Routes */}
         <Route
-          path="/"
+          path="/login"
           element={
-            <div className="flex items-center justify-center h-full bg-gradient-to-br from-primary-500 to-primary-700">
-              <div className="text-center text-white p-8">
-                <h1 className="text-5xl font-bold mb-4">🏥 تذاكر</h1>
-                <h2 className="text-3xl font-semibold mb-4">Tazaker</h2>
-                <p className="text-xl mb-2">Hospital Queue Management System</p>
-                <p className="text-lg">Frontend Structure Ready</p>
-                <div className="mt-8 space-y-2">
-                  <p className="text-sm opacity-90">✅ React 18 + Vite</p>
-                  <p className="text-sm opacity-90">✅ Tailwind CSS</p>
-                  <p className="text-sm opacity-90">✅ Redux Toolkit</p>
-                  <p className="text-sm opacity-90">✅ i18next (Arabic/English)</p>
-                  <p className="text-sm opacity-90">✅ Socket.IO Client</p>
-                  <p className="text-sm opacity-90">✅ Axios with Interceptors</p>
-                </div>
-                <div className="mt-8">
-                  <p className="text-sm italic">Ready for UI implementation...</p>
-                </div>
-              </div>
-            </div>
+            isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />
           }
         />
 
-        {/* Authentication routes */}
-        {/* <Route path="/login" element={<AuthLayout><LoginPage /></AuthLayout>} /> */}
-
-        {/* Protected routes */}
-        {/* <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+        {/* Protected Routes */}
+        <Route
+          element={
+            <ProtectedRoute>
+              <MainLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route path="/dashboard" element={<DashboardPage />} />
+
+          {/* Tickets Management */}
           <Route path="/tickets" element={<TicketsPage />} />
-          <Route path="/queue/:clinicId" element={<QueuePage />} />
-          <Route path="/patients" element={<PatientsPage />} />
-          <Route path="/clinics" element={<ClinicsPage />} />
-          <Route path="/doctors" element={<DoctorsPage />} />
-          <Route path="/reports" element={<ReportsPage />} />
-        </Route> */}
 
-        {/* Public display route */}
-        {/* <Route path="/display/:clinicId" element={<DisplayPage />} /> */}
+          {/* Queue Management (Doctor Interface) */}
+          <Route
+            path="/queue"
+            element={
+              <ProtectedRoute allowedRoles={['doctor', 'admin', 'super_admin']}>
+                <QueuePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/patients"
+            element={
+              <div className="text-center py-20">
+                <h1 className="text-2xl font-bold mb-2">إدارة المرضى</h1>
+                <p className="text-gray-600">قيد التطوير...</p>
+              </div>
+            }
+          />
+          <Route
+            path="/clinics"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                <div className="text-center py-20">
+                  <h1 className="text-2xl font-bold mb-2">إدارة العيادات</h1>
+                  <p className="text-gray-600">قيد التطوير...</p>
+                </div>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/doctors"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                <div className="text-center py-20">
+                  <h1 className="text-2xl font-bold mb-2">إدارة الأطباء</h1>
+                  <p className="text-gray-600">قيد التطوير...</p>
+                </div>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                <div className="text-center py-20">
+                  <h1 className="text-2xl font-bold mb-2">التقارير والإحصائيات</h1>
+                  <p className="text-gray-600">قيد التطوير...</p>
+                </div>
+              </ProtectedRoute>
+            }
+          />
+        </Route>
 
-        {/* 404 Not found */}
-        {/* <Route path="*" element={<NotFoundPage />} /> */}
+        {/* Redirect root to dashboard if authenticated, otherwise to login */}
+        <Route
+          path="/"
+          element={
+            <Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />
+          }
+        />
+
+        {/* 404 Not Found */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </div>
   );
