@@ -104,9 +104,9 @@ app.use('/api/v1/patients', patientRoutes);
 const doctorRoutes = require('./routes/doctor.routes');
 app.use('/api/v1/doctors', doctorRoutes);
 
-// TODO: Add report routes
-// const reportRoutes = require('./routes/report.routes');
-// app.use('/api/v1/reports', reportRoutes);
+// Report routes
+const reportRoutes = require('./routes/report.routes');
+app.use('/api/v1/reports', reportRoutes);
 
 // ============================================
 // Error Handling
@@ -142,8 +142,17 @@ const startServer = async () => {
     logger.info('Testing SMS configuration...');
     await testSMSConfig();
 
-    // Start Express server
-    app.listen(PORT, HOST, () => {
+    // Create HTTP server
+    const http = require('http');
+    const server = http.createServer(app);
+
+    // Initialize Socket.IO
+    const { initializeSocket } = require('./websocket/socketHandler');
+    initializeSocket(server);
+    logger.info('WebSocket initialized');
+
+    // Start server
+    server.listen(PORT, HOST, () => {
       logger.info(`============================================`);
       logger.info(`🏥 Hospital Queue Management System`);
       logger.info(`============================================`);
@@ -151,6 +160,7 @@ const startServer = async () => {
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
       logger.info(`Health check: http://${HOST}:${PORT}/health`);
       logger.info(`API endpoint: http://${HOST}:${PORT}/api/v1`);
+      logger.info(`WebSocket: ws://${HOST}:${PORT}`);
       logger.info(`============================================`);
     });
   } catch (error) {

@@ -6,6 +6,7 @@ const { query } = require('../config/database');
 const { success, error, created, notFound } = require('../utils/response');
 const logger = require('../utils/logger');
 const { sendSMS, messageTemplates, formatPhoneNumber } = require('../config/sms');
+const { emitTicketCreated, emitPatientCalled, emitServiceCompleted, emitQueueUpdate, emitTicketStatusChanged } = require('../websocket/socketEvents');
 
 /**
  * Create new ticket
@@ -88,6 +89,24 @@ const createTicket = async (req, res) => {
       ticketNumber,
       clinicId: clinic_id,
       patientId: patient_id,
+    });
+
+    // Emit WebSocket event for real-time updates
+    emitTicketCreated({
+      ticket_id: ticket.ticket_id,
+      ticket_number: ticketNumber,
+      clinic_id,
+      patient_name: patient.full_name,
+      queue_position: queuePosition,
+      estimated_time: estimatedTime,
+      priority,
+      issued_at: ticket.issued_at,
+    });
+
+    // Emit queue update
+    emitQueueUpdate(clinic_id, {
+      waiting_count: queuePosition,
+      estimated_time: estimatedTime,
     });
 
     return created(res, {
@@ -256,6 +275,24 @@ const callNextPatient = async (req, res) => {
       doctorId: doctor.doctor_id,
     });
 
+    // Emit WebSocket event for real-time updates
+    const clinic = await Clinic.findById(clinicId);
+    emitPatientCalled({
+      ticket_id: updatedTicket.ticket_id,
+      ticket_number: updatedTicket.ticket_number,
+      clinic_id: clinicId,
+      patient_name: nextTicket.patient_name,
+      doctor_id: doctor.doctor_id,
+      called_at: updatedTicket.called_at,
+    }, clinic.clinic_name_ar);
+
+    // Update queue
+    const waitingCount = await Ticket.getWaitingCount(clinicId);
+    emitQueueUpdate(clinicId, {
+      waiting_count: waitingCount,
+      current_ticket: updatedTicket.ticket_number,
+    });
+
     return success(res, {
       ticket_id: updatedTicket.ticket_id,
       ticket_number: updatedTicket.ticket_number,
@@ -290,6 +327,15 @@ const startServing = async (req, res) => {
     });
 
     logger.info('Started serving patient', { ticketId: id });
+
+    // Emit WebSocket event
+    emitTicketStatusChanged({
+      ticket_id: updatedTicket.ticket_id,
+      ticket_number: updatedTicket.ticket_number,
+      clinic_id: updatedTicket.clinic_id,
+      status: 'serving',
+      updated_at: updatedTicket.serving_started_at,
+    });
 
     return success(res, updatedTicket, 'Started serving patient');
   } catch (err) {
@@ -337,6 +383,22 @@ const completeTicket = async (req, res) => {
       actualServiceTime,
     });
 
+    // Emit WebSocket events
+    emitServiceCompleted({
+      ticket_id: updatedTicket.ticket_id,
+      ticket_number: updatedTicket.ticket_number,
+      clinic_id: updatedTicket.clinic_id,
+      doctor_id: updatedTicket.doctor_id,
+      actual_service_time: actualServiceTime,
+      completed_at: updatedTicket.completed_at,
+    });
+
+    // Update queue
+    const waitingCount = await Ticket.getWaitingCount(ticket.clinic_id);
+    emitQueueUpdate(ticket.clinic_id, {
+      waiting_count: waitingCount,
+    });
+
     return success(res, updatedTicket, 'Ticket completed successfully');
   } catch (err) {
     logger.error('Complete ticket error:', err);
@@ -365,6 +427,21 @@ const markNoShow = async (req, res) => {
 
     logger.info('Ticket marked as no show', { ticketId: id });
 
+    // Emit WebSocket events
+    emitTicketStatusChanged({
+      ticket_id: updatedTicket.ticket_id,
+      ticket_number: updatedTicket.ticket_number,
+      clinic_id: updatedTicket.clinic_id,
+      status: 'no_show',
+      updated_at: new Date(),
+    });
+
+    // Update queue
+    const waitingCount = await Ticket.getWaitingCount(ticket.clinic_id);
+    emitQueueUpdate(ticket.clinic_id, {
+      waiting_count: waitingCount,
+    });
+
     return success(res, updatedTicket, 'Marked as no show');
   } catch (err) {
     logger.error('Mark no show error:', err);
@@ -392,6 +469,23 @@ const cancelTicket = async (req, res) => {
     const updatedTicket = await Ticket.updateStatus(id, 'cancelled', { notes });
 
     logger.info('Ticket cancelled', { ticketId: id });
+
+    // Emit WebSocket events
+    emitTicketStatusChanged({
+      ticket_id: updatedTicket.ticket_id,
+      ticket_number: updatedTicket.ticket_number,
+      clinic_id: updatedTicket.clinic_id,
+      status: 'cancelled',
+      updated_at: new Date(),
+    });
+
+    // Update queue if ticket was in waiting state
+    if (ticket.status === 'waiting') {
+      const waitingCount = await Ticket.getWaitingCount(ticket.clinic_id);
+      emitQueueUpdate(ticket.clinic_id, {
+        waiting_count: waitingCount,
+      });
+    }
 
     return success(res, updatedTicket, 'Ticket cancelled');
   } catch (err) {
