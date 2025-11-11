@@ -88,17 +88,24 @@ app.get('/api', (req, res) => {
 const authRoutes = require('./routes/auth.routes');
 app.use('/api/v1/auth', authRoutes);
 
-// TODO: Add more routes
-// const clinicRoutes = require('./routes/clinic.routes');
-// const ticketRoutes = require('./routes/ticket.routes');
-// const patientRoutes = require('./routes/patient.routes');
-// const doctorRoutes = require('./routes/doctor.routes');
+// Clinic routes
+const clinicRoutes = require('./routes/clinic.routes');
+app.use('/api/v1/clinics', clinicRoutes);
+
+// Ticket routes
+const ticketRoutes = require('./routes/ticket.routes');
+app.use('/api/v1/tickets', ticketRoutes);
+
+// Patient routes
+const patientRoutes = require('./routes/patient.routes');
+app.use('/api/v1/patients', patientRoutes);
+
+// Doctor routes
+const doctorRoutes = require('./routes/doctor.routes');
+app.use('/api/v1/doctors', doctorRoutes);
+
+// TODO: Add report routes
 // const reportRoutes = require('./routes/report.routes');
-//
-// app.use('/api/v1/clinics', clinicRoutes);
-// app.use('/api/v1/tickets', ticketRoutes);
-// app.use('/api/v1/patients', patientRoutes);
-// app.use('/api/v1/doctors', doctorRoutes);
 // app.use('/api/v1/reports', reportRoutes);
 
 // ============================================
