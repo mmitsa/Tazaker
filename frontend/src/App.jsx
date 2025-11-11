@@ -12,6 +12,7 @@ import LoginPage from '@pages/auth/LoginPage';
 import DashboardPage from '@pages/dashboard/DashboardPage';
 import TicketsPage from '@pages/tickets/TicketsPage';
 import QueuePage from '@pages/queue/QueuePage';
+import DisplayPage from '@pages/display/DisplayPage';
 import NotFoundPage from '@pages/NotFoundPage';
 
 // Components
@@ -42,6 +43,9 @@ function App() {
             isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />
           }
         />
+
+        {/* Public Display Screen - No authentication required */}
+        <Route path="/display/:clinicId" element={<DisplayPage />} />
 
         {/* Protected Routes */}
         <Route
