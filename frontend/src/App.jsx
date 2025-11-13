@@ -13,6 +13,7 @@ import DashboardPage from '@pages/dashboard/DashboardPage';
 import TicketsPage from '@pages/tickets/TicketsPage';
 import QueuePage from '@pages/queue/QueuePage';
 import DisplayPage from '@pages/display/DisplayPage';
+import ReportsPage from '@pages/reports/ReportsPage';
 import NotFoundPage from '@pages/NotFoundPage';
 
 // Components
@@ -100,14 +101,12 @@ function App() {
               </ProtectedRoute>
             }
           />
+          {/* Reports & Analytics (Admin) */}
           <Route
             path="/reports"
             element={
               <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
-                <div className="text-center py-20">
-                  <h1 className="text-2xl font-bold mb-2">التقارير والإحصائيات</h1>
-                  <p className="text-gray-600">قيد التطوير...</p>
-                </div>
+                <ReportsPage />
               </ProtectedRoute>
             }
           />
